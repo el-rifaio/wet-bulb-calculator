@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Live Weather Station Viewer</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 30px;
+      text-align: center;
+    }
+    input {
+      width: 500px;
+      padding: 10px;
+      font-size: 16px;
+    }
+    button {
+      padding: 10px;
+      font-size: 16px;
+      margin-left: 10px;
+    }
+    canvas {
+      margin-top: 40px;
+      max-width: 800px;
+    }
+    .indicator {
+      display: inline-block;
+      width: 140px;
+      height: 30px;
+      font-size: 14px;
+      font-weight: bold;
+      text-align: center;
+      line-height: 30px;
+      color: white;
+      border-radius: 5px;
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Weather Underground Wet-Bulb Calculator</h1>
+  <p>Paste your station link:</p>
+  <input type="text" id="stationLink" placeholder="https://www.wunderground.com/dashboard/pws/KMALOWEL100">
+  <button onclick="loadWeather()">Go</button>
+
+  <h2>🌡️ Current Weather</h2>
+  <p>Temperature: <span id="temperature">--</span></p>
+  <p>Humidity: <span id="humidity">--</span></p>
+  <p>Wet-Bulb Temp: <span id="wet_bulb">--</span></p>
+  <div id="wet_bulb_indicator" class="indicator">--</div>
+  </p>
+
+  <h2>Wet-Bulb Historical Data For Weather Station 34: KMALOWEL100</h2>
+  <canvas id="wetBulbChart"></canvas>
+
+  <script>
+    async function loadWeather() {
+      const link = document.getElementById("stationLink").value;
+      if (!link) return alert("Please enter a Weather Underground link");
+
+      const encodedLink = encodeURIComponent(link);
+
+      try {
+        const currentRes = await fetch(`http://127.0.0.1:8080/get_current_weather?link=${encodedLink}`);
+        const current = await currentRes.json();
+
+        if (current.error) throw new Error(current.error);
+
+        document.getElementById("temperature").innerText = current.temperature + "°F";
+        document.getElementById("humidity").innerText = current.humidity + "%";
+        document.getElementById("wet_bulb").innerText = current.wet_bulb + "°F";
+
+        const wb = parseFloat(current.wet_bulb);
+        const indicator = document.getElementById("wet_bulb_indicator");
+
+        if (wb > 90) {
+          indicator.style.backgroundColor = "purple";
+          indicator.innerText = "EXTREME HEAT";
+        } else if (wb >= 85) {
+          indicator.style.backgroundColor = "red";
+          indicator.innerText = "High Heat";
+        } else if (wb >= 80) {
+          indicator.style.backgroundColor = "orange";
+          indicator.innerText = "Heat Caution";
+        } else if (wb >= 0) {
+          indicator.style.backgroundColor = "green";
+          indicator.innerText = "Safe";
+        }
+
+      } catch (err) {
+        console.error("Error loading current weather:", err);
+        alert("Could not load current weather.");
+      }
+    }
+
+    async function loadLoggedData() {
+      try {
+        const res = await fetch("http://127.0.0.1:8080/get_logged_data");
+        const data = await res.json();
+
+        if (data.error) throw new Error(data.error);
+
+        const labels = data.map(d => d.time);
+        const wetBulbs = data.map(d => d.wetbulb);
+
+        const ctx = document.getElementById("wetBulbChart").getContext("2d");
+        new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: labels,
+            datasets: [{
+              label: "Wet-Bulb Temperature (°F)",
+              data: wetBulbs,
+              borderColor: "blue",
+              backgroundColor: "rgba(0, 0, 255, 0.1)",
+              fill: true,
+              tension: 0.2
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              title: {
+                display: true,
+                text: "Wet-Bulb Temperature Over Time"
+              }
+            },
+            scales: {
+              x: {
+                ticks: { maxTicksLimit: 20 }
+              }
+            }
+          }
+        });
+      } catch (err) {
+        console.error("Error loading logged data:", err);
+        alert("Failed to load wet-bulb data.");
+      }
+    }
+
+    window.onload = loadLoggedData;
+  </script>
+</body>
+</html>
