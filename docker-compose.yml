@@ -1,0 +1,7 @@
+services:
+  weather-server:
+    image: weather-app:latest
+    container_name: weather-app
+    build: .
+    ports:
+      - "8080:8080"
