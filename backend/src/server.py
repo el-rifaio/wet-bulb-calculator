@@ -7,11 +7,12 @@ import datetime
 import csv
 import threading
 import time
+from os import path
 
 app = Flask(__name__)
 CORS(app)
 
-CSV_FILE = "wetbulb.csv"
+CSV_FILE = path.join(path.dirname(path.realpath(__file__)), "db", "wetbulb.csv")
 STATION_URL = "https://www.wunderground.com/dashboard/pws/KMALOWEL100"
 
 def calculate_wet_bulb(T, RH):
