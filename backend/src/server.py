@@ -1,3 +1,5 @@
+# Copyright 2025 Omar El-Rifai
+
 from flask import Flask, jsonify, request
 import requests
 from bs4 import BeautifulSoup
@@ -160,3 +162,4 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
     app.run(debug=True, host='0.0.0.0', port=8080) # Change port to 8080 for local testing
+
